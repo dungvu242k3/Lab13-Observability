@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 13 - MedBot Health Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .panel { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; position: relative;}
+        .chart-container { position: relative; height: 250px; width: 100%; }
+        .sl-line { position: absolute; height: 1px; border-top: 2px dashed #ef4444; width: 100%; z-index: 10; pointer-events: none;}
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">MedBot Health & Observability Dashboard</h1>
+                <p class="text-slate-400 mt-1">Live Medical Telemetry & Application Metrics</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span id="ping-indicator" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-sm text-slate-300">Live (Polling 10s)</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="panel p-4 flex flex-col justify-center items-center">
+                <span class="text-slate-400 text-sm">Total Traffic</span>
+                <span id="kpi-traffic" class="text-3xl font-bold text-white mt-2">0</span>
+            </div>
+            <div class="panel p-4 flex flex-col justify-center items-center">
+                <span class="text-slate-400 text-sm">P95 Latency</span>
+                <span id="kpi-p95" class="text-3xl font-bold text-emerald-400 mt-2">0ms</span>
+            </div>
+            <div class="panel p-4 flex flex-col justify-center items-center">
+                <span class="text-slate-400 text-sm">Total Cost</span>
+                <span id="kpi-cost" class="text-3xl font-bold text-purple-400 mt-2">$0.00</span>
+            </div>
+            <div class="panel p-4 flex flex-col justify-center items-center">
+                <span class="text-slate-400 text-sm">Avg Quality</span>
+                <span id="kpi-quality" class="text-3xl font-bold text-blue-400 mt-2">0.0</span>
+            </div>
+        </div>
+
+        <!-- Charts Grid, 6 panels -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- P1: Latency -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">1. Latency (P50/P95/P99)</h3>
+                <div class="chart-container">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+                <div class="text-xs text-slate-400 mt-2 text-right">SLO: P95 < 3000ms</div>
+            </div>
+
+            <!-- P2: Traffic Over Time -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">2. Traffic Growth</h3>
+                <div class="chart-container">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+
+            <!-- P3: Errors -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">3. Error Breakdown</h3>
+                <div class="chart-container">
+                    <canvas id="errorChart"></canvas>
+                </div>
+                <div id="no-errors" class="absolute inset-0 flex justify-center items-center text-emerald-500 font-bold hidden">0 Errors</div>
+            </div>
+
+            <!-- P4: Cost Over Time -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">4. Total Cost ($ USD)</h3>
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
+                <div class="text-xs text-slate-400 mt-2 text-right">Budget Limit: $2.5/day</div>
+            </div>
+
+            <!-- P5: Tokens -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">5. Tokens In/Out</h3>
+                <div class="chart-container">
+                    <canvas id="tokensChart"></canvas>
+                </div>
+            </div>
+
+            <!-- P6: Quality Proxy -->
+            <div class="panel">
+                <h3 class="text-lg font-semibold text-slate-200 mb-4">6. Quality Proxy</h3>
+                <div class="chart-container">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+                 <div class="text-xs text-slate-400 mt-2 text-right">Target Quality > 0.8</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup Charts
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter';
+        
+        // P1: Latency Bar Chart
+        const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+        const latencyChart = new Chart(latencyCtx, {
+            type: 'bar',
+            data: { labels: ['P50', 'P95', 'P99'], datasets: [{
+                label: 'Latency (ms)',
+                data: [0, 0, 0],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
+            }]},
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line', yMin: 3000, yMax: 3000,
+                                borderColor: '#ef4444', borderWidth: 2, borderDash: [5, 5],
+                                label: { content: 'SLO (3s)', enabled: true, position: 'end' }
+                            }
+                        }
+                    } // ChartJS annotation plugin normally needed, but we simulate logic or just show bar
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Time series storage
+        const maxDataPoints = 15;
+        const timeLabels = [];
+        const trafficDataSeries = [];
+        const costDataSeries = [];
+        const qualityDataSeries = [];
+
+        // P2: Traffic Line
+        const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+        const trafficChart = new Chart(trafficCtx, {
+            type: 'line',
+            data: { labels: timeLabels, datasets: [{
+                label: 'Cumulative Traffic', data: trafficDataSeries,
+                borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true, tension: 0.3
+            }]},
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // P3: Error Pie
+        const errorCtx = document.getElementById('errorChart').getContext('2d');
+        const errorChart = new Chart(errorCtx, {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['#ef4444', '#f97316', '#eab308', '#8b5cf6'] }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%'}
+        });
+
+        // P4: Cost Line
+        const costCtx = document.getElementById('costChart').getContext('2d');
+        const costChart = new Chart(costCtx, {
+            type: 'line',
+            data: { labels: timeLabels, datasets: [{
+                label: 'Total Cost ($)', data: costDataSeries,
+                borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.1)', fill: true, tension: 0.3
+            }]},
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // P5: Tokens Bar
+        const tokensCtx = document.getElementById('tokensChart').getContext('2d');
+        const tokensChart = new Chart(tokensCtx, {
+            type: 'bar',
+            data: { labels: ['Input', 'Output'], datasets: [{
+                label: 'Tokens', data: [0, 0],
+                backgroundColor: ['#14b8a6', '#f43f5e']
+            }]},
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // P6: Quality Line
+        const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+        const qualityChart = new Chart(qualityCtx, {
+            type: 'line',
+            data: { labels: timeLabels, datasets: [{
+                label: 'Avg Quality Score', data: qualityDataSeries,
+                borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.1)', fill: true, tension: 0.3
+            }]},
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 1 } } }
+        });
+
+        // Polling logic
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/metrics');
+                const data = await response.json();
+
+                const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                if (timeLabels.length > maxDataPoints) {
+                    timeLabels.shift();
+                    trafficDataSeries.shift();
+                    costDataSeries.shift();
+                    qualityDataSeries.shift();
+                }
+                timeLabels.push(now);
+                trafficDataSeries.push(data.traffic);
+                costDataSeries.push(data.total_cost_usd);
+                qualityDataSeries.push(data.quality_avg);
+
+                // Update KPIs
+                document.getElementById('kpi-traffic').textContent = data.traffic;
+                document.getElementById('kpi-p95').textContent = data.latency_p95 + 'ms';
+                document.getElementById('kpi-cost').textContent = '$' + data.total_cost_usd.toFixed(4);
+                document.getElementById('kpi-quality').textContent = data.quality_avg;
+                if(data.latency_p95 > 3000) { document.getElementById('kpi-p95').className = "text-3xl font-bold text-red-500 mt-2 animate-pulse"; }
+                else { document.getElementById('kpi-p95').className = "text-3xl font-bold text-emerald-400 mt-2"; }
+
+                // Update P1
+                latencyChart.data.datasets[0].data = [data.latency_p50, data.latency_p95, data.latency_p99];
+                latencyChart.update();
+
+                // Update P2, P4, P6
+                trafficChart.update();
+                costChart.update();
+                qualityChart.update();
+
+                // Update P3 (Errors)
+                const errorKeys = Object.keys(data.error_breakdown);
+                const errorValues = Object.values(data.error_breakdown);
+                if(errorKeys.length === 0) {
+                    document.getElementById('no-errors').classList.remove('hidden');
+                    document.getElementById('errorChart').style.opacity = '0.2';
+                } else {
+                    document.getElementById('no-errors').classList.add('hidden');
+                    document.getElementById('errorChart').style.opacity = '1';
+                    errorChart.data.labels = errorKeys;
+                    errorChart.data.datasets[0].data = errorValues;
+                }
+                errorChart.update();
+
+                // Update P5 (Tokens)
+                tokensChart.data.datasets[0].data = [data.tokens_in_total, data.tokens_out_total];
+                tokensChart.update();
+
+            } catch (err) {
+                console.error("Failed to fetch metrics", err);
+                document.getElementById('ping-indicator').classList.replace('bg-emerald-400', 'bg-red-500');
+            }
+        }
+
+        // Initialize
+        fetchMetrics();
+        setInterval(fetchMetrics, 10000); // 10s polling
+    </script>
+</body>
+</html>
