@@ -1,10 +1,11 @@
-{"user_id":"u01","session_id":"s01","feature":"qa","message":"What is your refund policy? My email is student@vinuni.edu.vn"}
-{"user_id":"u02","session_id":"s02","feature":"qa","message":"Explain why metrics traces and logs work together"}
-{"user_id":"u03","session_id":"s03","feature":"summary","message":"Summarize the monitoring policy for production logging"}
-{"user_id":"u04","session_id":"s04","feature":"qa","message":"Can I get help with policy and monitoring?"}
-{"user_id":"u05","session_id":"s05","feature":"qa","message":"Here is my phone 0987654321, what should be logged?"}
-{"user_id":"u06","session_id":"s06","feature":"summary","message":"Give me a short summary of the observability workflow"}
-{"user_id":"u07","session_id":"s07","feature":"qa","message":"What should not appear in app logs?"}
-{"user_id":"u08","session_id":"s08","feature":"qa","message":"How do I debug tail latency?"}
-{"user_id":"u09","session_id":"s09","feature":"qa","message":"What is the policy for PII and credit card 4111 1111 1111 1111?"}
-{"user_id":"u10","session_id":"s10","feature":"qa","message":"How should alerts be designed?"}
+{"user_id":"u01","session_id":"s01","feature":"consult","message":"Chào bác sĩ, tôi 75 tuổi, có mã BHYT là GD1234567890123. Tôi uống Paracetamol cùng với Efferalgan được không?"}
+{"user_id":"u02","session_id":"s02","feature":"records","message":"Vui lòng kiểm tra hồ sơ bệnh án BN-9981 giúp tôi."}
+{"user_id":"u03","session_id":"s03","feature":"consult","message":"Trẻ 5 tuổi bị sốt 39 độ thì dùng thuốc gì hạ sốt nhanh?"}
+{"user_id":"u04","session_id":"s04","feature":"consult","message":"Thuốc dạ dày Omeprazole giá bao nhiêu và tác dụng phụ là gì?"}
+{"user_id":"u05","session_id":"s05","feature":"records","message":"Gọi điện cho tôi theo số 0987654321 để báo kết quả xét nghiệm."}
+{"user_id":"u06","session_id":"s06","feature":"consult","message":"Bệnh nhân mã thẻ SV9876543210987, 42 tuổi, có triệu chứng ho khan."}
+{"user_id":"u07","session_id":"s07","feature":"consult","message":"Tương tác giữa thuốc giảm đau và thuốc kháng sinh?"}
+{"user_id":"u08","session_id":"s08","feature":"qa","message":"Làm sao để phòng ngừa bệnh sởi vào mùa này?"}
+{"user_id":"u09","session_id":"s09","feature":"qa","message":"Thẻ tín dụng của tôi số 4111 1111 1111 1111, tôi muốn thanh toán viện phí."}
+{"user_id":"u10","session_id":"s10","feature":"qa","message":"Làm sao để đặt lịch khám bác sĩ tim mạch?"}
+
