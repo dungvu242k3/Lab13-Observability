@@ -34,7 +34,7 @@
   {"service": "api", "payload": {"message_preview": "Bệnh nhân mã thẻ [REDACTED_BHYT], [REDACTED_AGE], có triệu chứng ho khan."}, "event": "request_received", "user_id_hash": "4c4f62330d76", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-77465d26", "session_id": "s06", "feature": "consult", "level": "info", "ts": "2026-04-20T11:47:12.334729Z"}
   ```
 - **EVIDENCE_TRACE_WATERFALL_SCREENSHOT**: 
-[trace_waterfall](trace_waterfall.png)
+[trace_waterfall](trace_waterfall.jpg)
 - **TRACE_WATERFALL_EXPLANATION**: Trace waterfall minh hoạ rõ request đi từ API xuống hàm `run` của Agent, sau đó gọi `retrieve` (RAG) và `generate` (LLM). Thời gian chủ yếu tốn tại span của LLM. Context tags và user_id_hash được đính kèm đầy đủ.
 
 ### 3.2 Dashboard & SLOs
